@@ -1,3 +1,109 @@
+# import re
+# import requests
+# import json
+# from verifier import run_verification
+
+# # Constants
+# MODEL_NAME = "deepseek-coder-v2:16b"
+# DESIGN_FILE = "module.v"
+# TB_FILE = "tb.v"
+# MAX_ITERATIONS = 5
+
+# def extract_verilog(llm_response: str) -> str:
+#     match = re.search(r'```verilog\s*(.*?)\s*```', llm_response, re.DOTALL)
+#     if match:
+#         return match.group(1).strip()
+    
+#     # Fallback: Agar LLM ne markdown use nahi kiya, toh assume pura response code hai (Risky)
+#     return llm_response.strip()
+
+# def prompt_llm(current_code: str, error_log: str) -> str:
+#     # 1. Colab se mila hua Cloudflare URL yahan paste karo
+#     api_url = "https://apt-believed-fireplace-essentially.trycloudflare.com/api/chat" 
+    
+#     # Headers simple rahenge (No skip-warning needed!)
+#     headers = {
+#         "Content-Type": "application/json"
+#     }
+    
+#     payload = {
+#         "model": "deepseek-coder-v2:16b", # Ya jo bhi model tumne load kiya hai
+#         "messages": [
+#             {"role": "system", "content": "You are a VLSI expert. Fix Verilog. Output ONLY code in ```verilog ```."},
+#             {"role": "user", "content": f"FIX THIS CODE:\n{current_code}\n\nERROR:\n{error_log}"}
+#         ],
+#         "stream": False
+#     }
+
+#     try:
+#         print(f"🧠 Sending request to Cloudflare Tunnel...")
+#         response = requests.post(api_url, json=payload, headers=headers, timeout=180)
+        
+#         # Check if response is valid JSON
+#         response.raise_for_status()
+#         return response.json()["message"]["content"]
+        
+#     except Exception as e:
+#         print(f"❌ API Crash: {e}")
+#         return ""
+    
+#     # Backup original file just in case
+#     with open(DESIGN_FILE, "r") as f:
+#         original_code = f.read()
+#     with open(f"{DESIGN_FILE}.backup", "w") as f:
+#         f.write(original_code)
+        
+#     for attempt in range(1, MAX_ITERATIONS + 1):
+#         print(f"\n--- Iteration {attempt}/{MAX_ITERATIONS} ---")
+        
+#         # 1. Run Baseline Verification
+#         result = run_verification(DESIGN_FILE, TB_FILE)
+        
+#         if result.passed:
+#             print("✅ SUCCESS: Logic is correct. AI job done.")
+#             return True
+        
+#         print(f"❌ FAILED at stage: {result.stage}")
+#         print("Log:", result.message)
+        
+#         if attempt == MAX_ITERATIONS:
+#             print("\n💀 MAX ITERATIONS REACHED. LLM is stuck in a loop. Rolling back.")
+#             break
+            
+#         # 2. Get current faulty code
+#         with open(DESIGN_FILE, "r") as f:
+#             current_code = f.read()
+            
+#         # 3. Query LLM
+#         # Hum pass kar rahe hain error details (message + stderr/stdout)
+#         full_error = f"{result.message}\n{result.stderr}\n{result.stdout}"
+#         raw_response = prompt_llm(current_code, full_error)
+#         if not raw_response:
+#             print("❌ Critical: LLM API unreachable. Aborting optimization.")
+#         break
+        
+#         # 4. Extract and Patch
+#         patched_code = extract_verilog(raw_response)
+        
+#         if not patched_code or "module" not in patched_code:
+#             print("⚠ ERROR: LLM hallucinated and returned garbage. Retrying...")
+#             continue
+            
+#         # Overwrite the file with AI's fix
+#         with open(DESIGN_FILE, "w") as f:
+#             f.write(patched_code)
+            
+#         print("🔧 Patch applied. Re-verifying in next iteration...")
+
+#     # Rollback logic if it fails completely
+#     print("🔄 Restoring original file from backup...")
+#     with open(DESIGN_FILE, "w") as f:
+#         f.write(original_code)
+#     return False
+
+# if __name__ == "__main__":
+#     auto_patch_loop()
+
 import re
 import requests
 from verifier import run_verification
