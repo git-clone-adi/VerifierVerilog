@@ -1,0 +1,10 @@
+// module: dummy_and
+// description: 2-input AND gate
+module and_gate (
+    input  wire a,
+    input  wire b,
+    output wire y
+);
+
+    // Continuous assignment: y is high only when both a and b are high
+    assign y = a & b;
